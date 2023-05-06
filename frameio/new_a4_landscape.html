@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FrameIO - A4/A3</title>
+    <link rel="icon" type="image/x-icon" href="assets/svg/icon_frameio.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+        integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js"
+        integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"
+        integrity="sha512-HkRNCiaZYxQAkHpLFYI90ObSzL0vaIXL8Xe3bM51vhdYI79RDFMLTAsmVH1xVPREmTlUWexgrQMk+c3RBTsLGw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8" />
+    <style>
+        .controls {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls container text-center mt-3">
+        <p>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('LOGO')">Logo</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('PICTURE')">Picture</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('DPE')">DPE</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('GES')">GES</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('PROFILE')">Profile</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('MASK')">Mask</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('TITRE')">Titre</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('PRICE')">Price</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('DESCRIPTION')">Description</button>
+            <button id="btnAddImg" class="btn btn-outline-dark" onclick="AddImg('LEGAL')">Legal</button>
+            <button id="btnAddImg" class="btn btn-outline-dark me-4" onclick="AddImg('OTHER')">Other</button>
+            <input type="file" class="btn btn-outline-dark mt-1 me-5" id="imgLoader" accept="image/*"><br>
+            <button id="btnGenerateCoords" class="btn btn-outline-success mt-2" onclick="GenerateCoords()">Generate
+                Code</button>
+            <button id="btnGenerateJson" class="btn btn-outline-success mt-2" onclick="GenerateJson()">Generate JSON</button>
+            <button id="btnGenerateDiagram" class="btn btn-outline-success mt-2" onclick="GenerateDiagram()">Generate Canvas</button><br>
+        </p>
+    </div>
+
+    <div class="ms-5">
+        <canvas id="c" class="ms-5" style="border:2px solid #ccc" width="1125" height="795"></canvas>
+        <textarea class="mt-3 ms-4" id="textareaOutputCoords" autocomplete='off' rows="8" cols="132"></textarea><br>
+    </div>
+
+    <script>
+        var canvas;
+        const canvasFrame = document.getElementById("c");
+
+        // size canvas :
+        // 1px = 0.264 mm
+        // A4 portrait = width="795" height="1125"
+        // A4 landscape = width="1125" height="795"
+        // A3 portrait = width="1125" height="1590"
+        // A3 landscape = width="1590" height="1125"
+
+        canvas = this.__canvas = new fabric.Canvas('c');
+
+        // create a object
+        var deleteIcon = "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
+
+        var deleteImg = document.createElement('img');
+        deleteImg.src = deleteIcon;
+
+        fabric.Object.prototype.transparentCorners = false;
+        fabric.Object.prototype.cornerColor = 'black';
+        fabric.Object.prototype.cornerStyle = 'circle';
+
+        document.getElementById('imgLoader').addEventListener("change", function (e) {
+            canvas.setBackgroundColor('', canvas.renderAll.bind(canvas));
+            canvas.setBackgroundImage(0, canvas.renderAll.bind(canvas));
+            var file = e.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function (f) {
+                var data = f.target.result;
+                fabric.Image.fromURL(data, function (img) {
+                    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                        scaleX: canvas.width / img.width,
+                        scaleY: canvas.height / img.height
+                    });
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function objectAddedListener(ev) {
+            let target = ev.target;
+            console.log('ID', target.id, 'left', target.left, 'top', target.top, 'width', target.width, 'height', target.height);
+
+        }
+
+        function objectMovedListener(ev) {
+            let target = ev.target;
+            console.log('ID', target.id, 'left', target.left, 'top', target.top, 'width', target.width * target.scaleX, 'height', target.height * target.scaleY);
+        }
+
+        function generateId() {
+            return `${Math.random().toString(36).substr(2, 9)}`;
+        }
+
+        function AddImg(type) {
+            nameRDM = generateId();
+            textSample = null;
+
+            if (type == "LOGO") {
+                textSample = new fabric.Text('LOGO', {
+                    id: 'LOGO-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PICTURE") {
+                textSample = new fabric.Text('PICTURE', {
+                    id: 'PICTURE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "DPE") {
+                textSample = new fabric.Text('DPE', {
+                    id: 'DPE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "GES") {
+                textSample = new fabric.Text('GES', {
+                    id: 'GES-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PROFILE") {
+                textSample = new fabric.Text('PROFILE', {
+                    id: 'PROFILE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "MASK") {
+                textSample = new fabric.Text('MASK', {
+                    id: 'MASK-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "TITRE") {
+                textSample = new fabric.Text('TITRE', {
+                    id: 'TITRE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PRICE") {
+                textSample = new fabric.Text('PRICE', {
+                    id: 'PRICE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "DESCRIPTION") {
+                textSample = new fabric.Text('DESCRIPTION', {
+                    id: 'DESCRIPTION-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "LEGAL") {
+                textSample = new fabric.Text('LEGAL', {
+                    id: 'LEGAL-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "OTHER") {
+                textSample = new fabric.Text('OTHER', {
+                    id: 'OTHER-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            var square = new fabric.Rect({
+                id: 'LOGO-' + nameRDM,
+                left: 100,
+                top: 50,
+                fill: 'yellow',
+                width: 100,
+                height: 100,
+                opacity: 0.5,
+                objectCaching: false
+            });
+
+            textSample.clipTo = function (ctx) {
+                ctx.rect(-textSample.width / 2, -textSample.height / 2, textSample.width / 2, textSample.height / 2);
+            }
+
+            canvas.on('object:added', objectAddedListener);
+            canvas.on('object:modified', objectMovedListener);
+
+            //canvas.add(square);
+            //canvas.setActiveObject(square);
+
+            canvas.add(textSample);
+            canvas.setActiveObject(textSample);
+        }
+
+        function AddImg(type, x, y, size_x, size_y) {
+            nameRDM = generateId();
+            textSample = null;
+
+            if (x == null) {
+                x = 0;
+            }
+
+            if (y == null) {
+                y = 0;
+            }
+
+            if (size_x == null) {
+                size_x = 0;
+            }
+
+            if (size_y == null) {
+                size_y = 0;
+            }
+
+            if (type == "LOGO") {
+                textSample = new fabric.Text('LOGO', {
+                    id: 'LOGO-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PICTURE") {
+                textSample = new fabric.Text('PICTURE', {
+                    id: 'PICTURE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "DPE") {
+                textSample = new fabric.Text('DPE', {
+                    id: 'DPE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "GES") {
+                textSample = new fabric.Text('GES', {
+                    id: 'GES-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PROFILE") {
+                textSample = new fabric.Text('PROFILE', {
+                    id: 'PROFILE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "MASK") {
+                textSample = new fabric.Text('MASK', {
+                    id: 'MASK-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'yellow',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "TITRE") {
+                textSample = new fabric.Text('TITRE', {
+                    id: 'TITRE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "PRICE") {
+                textSample = new fabric.Text('PRICE', {
+                    id: 'PRICE-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "DESCRIPTION") {
+                textSample = new fabric.Text('DESCRIPTION', {
+                    id: 'DESCRIPTION-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "LEGAL") {
+                textSample = new fabric.Text('LEGAL', {
+                    id: 'LEGAL-' + nameRDM,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false
+                });
+            }
+
+            if (type == "OTHER") {
+                var otherValue = prompt("Value :");
+
+                if(otherValue === ""){
+                    otherValue = generateId();
+                }
+
+                textSample = new fabric.Text(otherValue, {
+                    id: 'OTHER-' + otherValue,
+                    fill: 'black',
+                    backgroundColor: 'green',
+                    opacity: 0.5,
+                    objectCaching: false,
+                    left: parseInt(x),
+                    top: parseInt(y),
+                    width: parseInt(size_x),
+                    height: parseInt(size_y)
+                });
+            }
+
+            canvas.on('object:added', objectAddedListener);
+            canvas.on('object:modified', objectMovedListener);
+
+            canvas.add(textSample);
+            canvas.setActiveObject(textSample);
+        }
+
+        function GenerateCoords() {
+            textareaOutput = document.getElementById("textareaOutputCoords");
+            textareaOutput.value = "";
+            obj = canvas.getObjects();
+
+            // A4 Landscape - From A4
+            textareaOutput.value = "For A4 :\n";
+            obj.forEach(function (item, i) {
+                textareaOutput.value += item.id + ' - X : ' + item.left * 0.264 + ' Y : ' + item.top * 0.264 + ' width : ' + (item.width * item.scaleX) * 0.264 + ' height : ' + (item.height * item.scaleY) * 0.264 + '\n';
+                canvas.renderAll();
+            });
+
+            // A3 Landscape - From A4
+            textareaOutput.value += "\n----\n\nFor A3 :\n";
+            obj.forEach(function (item, i) {
+                textareaOutput.value += item.id + ' - X : ' + percentage(141, (item.left * 0.264)) + ' Y : ' + percentage(141, (item.top * 0.264)) + ' width : ' + percentage(141, ((item.width * item.scaleX) * 0.264)) + ' height : ' + percentage(141, ((item.height * item.scaleY) * 0.264)) + '\n';
+                canvas.renderAll();
+            });
+        }
+
+        function GenerateJson() {
+            textareaOutput = document.getElementById("textareaOutputCoords");
+            textareaOutput.value = "";
+
+            textareaOutput.value = JSON.stringify(canvas.toDatalessJSON(['id']));
+        }
+
+        function GenerateDiagram() {
+            textareaOutput = document.getElementById("textareaOutputCoords");
+            canvas.loadFromJSON(textareaOutput.value);
+        }
+
+        function renderIcon(icon) {
+            return function renderIcon(ctx, left, top, styleOverride, fabricObject) {
+                var size = this.cornerSize;
+                ctx.save();
+                ctx.translate(left, top);
+                ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+                ctx.drawImage(icon, -size / 2, -size / 2, size, size);
+                ctx.restore();
+            }
+        }
+
+        fabric.Object.prototype.controls.deleteControl = new fabric.Control({
+            x: 0.5,
+            y: -0.5,
+            offsetY: -16,
+            offsetX: 16,
+            cursorStyle: 'pointer',
+            mouseUpHandler: deleteObject,
+            render: renderIcon(deleteImg),
+            cornerSize: 24
+        });
+
+        function deleteObject(eventData, transform) {
+            var target = transform.target;
+            var canvas = target.canvas;
+            canvas.remove(target);
+            canvas.requestRenderAll();
+        }
+
+        function percentage(percent, total) {
+            return ((percent / 100) * total).toFixed(2)
+        }
+    </script>
+</body>
+
+</html>

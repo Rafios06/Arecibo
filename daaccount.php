@@ -1,0 +1,29 @@
+<?php
+include "connected.php";
+include "dbconnect.php";
+include_once "getters.php";
+include "setters.php";
+
+if (!isAdmin()) {
+    header('Location: activities.php');
+    exit;
+}
+
+if((int)$_GET['id'] === (int)$_SESSION['id']){
+    header('Location: list_users.php');
+    exit;
+}
+
+if (!empty($_GET['id'])) {
+    if ($stmt = $con->prepare('DELETE FROM accounts WHERE id = ?')) {
+        $stmt->bind_param('i', $_GET['id']);
+        $stmt->execute();
+        $stmt->close();
+    } else {
+        echo 'Could not prepare statement!';
+    }
+    $con->close();
+}
+
+header('Location: list_users.php');
+?>
