@@ -6,8 +6,8 @@ include_once "getters.php";
 $new_registration_account = TRUE;
 
 // CAPTCHA
-$captcha_api_secret_key = "0x8CFA469a3756fcD871e6f0B2D3a8934507fe053D"; // WARNING API_SECRET_KEY
-$captcha_api_public_key = "c186cf61-be65-42a7-9f90-8f845e54a2b9"; // WARNING API_PUBLIC_KEY
+$captcha_api_secret_key = "XXXX"; // WARNING API_SECRET_KEY
+$captcha_api_public_key = "XXXX"; // WARNING API_PUBLIC_KEY
 $captcha_add_signal_enabled = FALSE;
 $captcha_edit_signal_enabled = FALSE;
 
