@@ -1,8 +1,8 @@
 <?php  
   $db_host = "localhost";
   $db_name = "arecibo_db";
-  $db_pass = "ajFk04%1_vbc9G@"; // WARNING
-  $db_user = "wc6KimonQZFw"; // WARNING 
+  $db_pass = "XXXX"; // WARNING
+  $db_user = "XXXX"; // WARNING 
 
   $con = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
   
